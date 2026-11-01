@@ -169,14 +169,19 @@ class ScriptMaker(object):
             if sys.platform == 'darwin':
                 max_shebang_length = 512
             else:
-                max_shebang_length = 127
+                max_shebang_length = 1
             simple_shebang = ((b' ' not in executable) and (shebang_length <= max_shebang_length))
 
         if simple_shebang:
             result = b'#!' + executable + post_interp + b'\n'
         else:
+            executable = os.path.basename(executable)
             result = b'#!/bin/sh\n'
-            result += b"'''exec' " + executable + post_interp + b' "$0" "$@"\n'
+            result += (
+                b"'''exec' \"$(dirname \"$(realpath \"$0\" 2>/dev/null"
+                b" || readlink -f \"$0\" 2>/dev/null || echo \"$0\")\")\"/"
+                + executable + post_interp + b' "$0" "$@"\n'
+            )
             result += b"' '''\n"
         return result
 
